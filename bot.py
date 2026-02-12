@@ -87,7 +87,7 @@ with open("/oneserver/settings.json", "w") as f:
 stream(certbot(domains=domains))
 stream(chmod(domains=domains))
 
-shutil.copy2(f"/app/cert/{domains[0]}/fullchain.pem", "/oneserver/cert/fullchain.pem")
-shutil.copy2(f"/app/cert/{domains[0]}/privkey.pem", "/oneserver/cert/privkey.pem")
+shutil.copy2(f"/app/cert/{domains[0]}/fullchain1.pem", "/oneserver/cert/fullchain.pem")
+shutil.copy2(f"/app/cert/{domains[0]}/privkey1.pem", "/oneserver/cert/privkey.pem")
 
 os.system("cd /oneserver && docker compose up -d --build")
