@@ -6,7 +6,7 @@ import shutil
 containers = docker.from_env().containers
 
 def certbot(domains):
-    containers.run(
+    return containers.run(
         image="certbot/certbot",
         volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
         ports={"80": 80},
@@ -22,15 +22,15 @@ def certbot(domains):
             "./config",
             "--standalone",
         ],
-    )
+    ).decode()
 
 def chmod(domains):
     domain = domains[0]
-    containers.run(
+    return containers.run(
         image="alpine",
         volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
         command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"]
-    )
+    ).decode()
 
 """
 [
@@ -64,6 +64,9 @@ for setting in settings:
 
 with open("/oneserver/settings.json", 'w') as f:
     json.dump(settings, f)
+
+print(certbot(domains=domains))
+print(chmod(domains=domains))
 
 shutil.copy2(f"./cert/{domains[0]}/fullchain.pem", "/oneserver/cert/fullchain.pem")
 shutil.copy2(f"./cert/{domains[0]}/privkey.pem", "/oneserver/cert/privkey.pem")
