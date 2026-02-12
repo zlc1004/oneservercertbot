@@ -5,6 +5,7 @@ import shutil
 
 containers = docker.from_env().containers
 
+
 def certbot(domains):
     return containers.run(
         image="certbot/certbot",
@@ -23,8 +24,9 @@ def certbot(domains):
             "--standalone",
         ],
         detach=True,
-        remove=True
-    ).attach(stdout=True,stderr=True,stream=True,logs=True)
+        remove=True,
+    ).attach(stdout=True, stderr=True, stream=True, logs=True)
+
 
 def chmod(domains):
     domain = domains[0]
@@ -33,12 +35,14 @@ def chmod(domains):
         volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
         command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"],
         detach=True,
-        remove=True
-    ).attach(stdout=True,stderr=True,stream=True,logs=True)
+        remove=True,
+    ).attach(stdout=True, stderr=True, stream=True, logs=True)
+
 
 def stream(logs):
     for log in logs:
         print(log.decode())
+
 
 """
 [
@@ -55,24 +59,24 @@ def stream(logs):
 
 containers.get("oneserver").stop()
 
-with open("/oneserver/settings.json", 'r') as f:
+with open("/oneserver/settings.json", "r") as f:
     settings = json.load(f)
 
-new_setting=[]
+new_setting = []
 
 domains = []
 
 for setting in settings:
-    setting=setting.copy()
+    setting = setting.copy()
     if setting["type"] == "http":
         new_setting.append(setting)
         continue
-    setting["ca-bundle"] = "fullchain.pem",
-    setting["private-key"] = "privkey.pem",
+    setting["ca-bundle"] = ("fullchain.pem",)
+    setting["private-key"] = ("privkey.pem",)
     domains.append(setting["domain"])
     new_setting.append(setting)
 
-with open("/oneserver/settings.json", 'w') as f:
+with open("/oneserver/settings.json", "w") as f:
     json.dump(new_setting, f)
 
 stream(certbot(domains=domains))
