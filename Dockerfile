@@ -13,6 +13,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.0.3.tgz | tar -xz \
     && mv docker/docker /usr/local/bin/ \
+    # Create the CLI plugins directory
+    && mkdir -p /usr/local/lib/docker/cli-plugins \
+    # Download the Docker Compose binary (v2.27.1 as an example)
+    && curl -SL https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose \
+    && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose \
     && rm -rf docker \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 

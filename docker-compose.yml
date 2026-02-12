@@ -2,6 +2,8 @@ services:
   oneserver-certbot:
     build:
       context: .
+    environment:
+      - HOST_PWD=${PWD}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../oneserver:/oneserver

@@ -3,96 +3,93 @@ import json
 import docker
 import shutil
 
+# Setup Docker client
 containers = docker.from_env().containers
-
+host_pwd = os.getenv("HOST_PWD")
+# host_cert_path is the Windows path the Docker Engine needs
+host_cert_path = f"{host_pwd}/cert"
 
 def certbot(domains):
+    print(f"Starting Certbot for: {domains}")
     return containers.run(
         image="certbot/certbot",
-        volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
+        volumes={host_cert_path: {"bind": "/etc/letsencrypt", "mode": "rw"}},
         ports={"80": 80},
         command=[
-            "certonly",
-            "-n",
-            "--agree-tos",
-            "--preferred-challenges",
-            "http",
-            "-d",
-            ",".join(domains),
-            "--config-dir",
-            "./config",
-            "--standalone",
+            "certonly", "-n", "--agree-tos",
+            "--preferred-challenges", "http",
+            "-d", ",".join(domains),
+            "--standalone", "--expand",
         ],
         detach=True,
         remove=True,
     )
 
-
-def chmod(domains):
-    domain = domains[0]
+def chmod_certs():
+    # We use host_cert_path because this is a sibling container
     return containers.run(
         image="alpine",
-        volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
-        command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"],
+        volumes={host_cert_path: {"bind": "/etc/letsencrypt", "mode": "rw"}},
+        command=["chmod", "-R", "777", "/etc/letsencrypt"],
         detach=True,
         remove=True,
     )
-
 
 def stream(container):
     try:
         logs = container.logs(stdout=True, stderr=True, stream=True)
         for log in logs:
-            print(log.decode())
+            print(log.decode(), end="")
     except Exception as e:
-        print(e)
+        print(f"Log error: {e}")
 
+# 1. Stop the existing server
+try:
+    containers.get("oneserver").stop()
+except Exception:
+    pass 
 
-"""
-[
-    {
-        "domain": "dynamic.server.kobosh.com",
-        "forwarding": "host.docker.internal:59900",
-        "type": "https",
-        "ca-bundle": "dynamic.server.kobosh.com/fullchain.pem",
-        "private-key": "dynamic.server.kobosh.com/privkey.pem",
-        "websocket": true
-    }
-]
-"""
-
-containers.get("oneserver").stop()
-
+# 2. Update Settings
 with open("/oneserver/settings.json", "r") as f:
     settings = json.load(f)
 
 new_setting = []
-
 domains = []
 
 for setting in settings:
-    setting = setting.copy()
-    if setting["type"] == "http":
-        new_setting.append(setting)
-        continue
-    setting["ca-bundle"] = "fullchain.pem"
-    setting["private-key"] = "privkey.pem"
-    domains.append(setting["domain"])
-    new_setting.append(setting)
+    s = setting.copy()
+    if s["type"] == "https":
+        s["ca-bundle"] = "fullchain.pem"
+        s["private-key"] = "privkey.pem"
+        domains.append(s["domain"])
+    new_setting.append(s)
 
 with open("/oneserver/settings.json", "w") as f:
     json.dump(new_setting, f)
 
+# 3. Run Certbot and Fix Permissions
 stream(certbot(domains=domains))
-stream(chmod(domains=domains))
+stream(chmod_certs())
+
+# 4. Copy certificates using the 'live' path (Avoids the '1.pem' issue)
+# Note: Inside THIS container, the path is /app/cert/...
+source_dir = f"/app/cert/live/{domains[0]}"
+dest_dir = "/oneserver/cert"
+
+os.makedirs(dest_dir, exist_ok=True)
 
 try:
-    shutil.copy2(f"/app/cert/{domains[0]}/fullchain1.pem", "/oneserver/cert/fullchain.pem")
+    # We use a simple read/write to avoid symlink issues on Windows hosts
+    for filename in ["fullchain.pem", "privkey.pem"]:
+        src = os.path.join(source_dir, filename)
+        dst = os.path.join(dest_dir, filename)
+        with open(src, 'rb') as f_in, open(dst, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    print("Certificates copied successfully.")
 except Exception as e:
-    print(e)
-try:
-    shutil.copy2(f"/app/cert/{domains[0]}/privkey1.pem", "/oneserver/cert/privkey.pem")
-except Exception as e:
-    print(e)
+    print(f"Copy failed: {e}")
+    # Fallback: if 'live' fails because of symlink issues, you'd need to 
+    # glob the archive folder for the highest number.
 
+# 5. Restart the stack
 os.system("cd /oneserver && docker compose up -d --build")
