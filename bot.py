@@ -29,7 +29,7 @@ def chmod(domains):
     containers.run(
         image="alpine",
         volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
-        command=["alpine", "chmod 777", f"/opt/certbot/config/archive/{domain}/*"]
+        command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"]
     )
 
 """
