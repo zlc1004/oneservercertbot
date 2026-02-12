@@ -9,7 +9,7 @@ containers = docker.from_env().containers
 def certbot(domains):
     return containers.run(
         image="certbot/certbot",
-        volumes={"/app/cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
+        volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
         ports={"80": 80},
         command=[
             "certonly",
@@ -32,7 +32,7 @@ def chmod(domains):
     domain = domains[0]
     return containers.run(
         image="alpine",
-        volumes={"/app/cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
+        volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
         command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"],
         detach=True,
         remove=True,
