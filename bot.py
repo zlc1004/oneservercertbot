@@ -17,7 +17,7 @@ def certbot(domains):
             "--agree-tos",
             "--preferred-challenges",
             "http",
-            "--domain",
+            "-d",
             ",".join(domains),
             "--config-dir",
             "./config",
