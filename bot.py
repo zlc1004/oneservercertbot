@@ -75,8 +75,8 @@ for setting in settings:
     if setting["type"] == "http":
         new_setting.append(setting)
         continue
-    setting["ca-bundle"] = ("fullchain.pem",)
-    setting["private-key"] = ("privkey.pem",)
+    setting["ca-bundle"] = "fullchain.pem"
+    setting["private-key"] = "privkey.pem"
     domains.append(setting["domain"])
     new_setting.append(setting)
 
