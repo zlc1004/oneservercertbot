@@ -41,7 +41,6 @@ def chmod(domains):
 
 def stream(container):
     try:
-        if container.status != "running":return
         logs = container.logs(stdout=True, stderr=True, stream=True)
         for log in logs:
             print(log.decode())
