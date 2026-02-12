@@ -63,15 +63,17 @@ new_setting=[]
 domains = []
 
 for setting in settings:
+    setting=setting.copy()
     if setting["type"] == "http":
         new_setting.append(setting)
         continue
-    setting["ca-bundle"] = f"fullchain.pem",
-    setting["private-key"] = f"privkey.pem",
+    setting["ca-bundle"] = "fullchain.pem",
+    setting["private-key"] = "privkey.pem",
     domains.append(setting["domain"])
+    new_setting.append(setting)
 
 with open("/oneserver/settings.json", 'w') as f:
-    json.dump(settings, f)
+    json.dump(new_setting, f)
 
 stream(certbot(domains=domains))
 stream(chmod(domains=domains))
