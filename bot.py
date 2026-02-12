@@ -25,7 +25,7 @@ def certbot(domains):
         ],
         detach=True,
         remove=True,
-    ).attach(stdout=True, stderr=True, stream=True, logs=True)
+    )
 
 
 def chmod(domains):
@@ -36,12 +36,16 @@ def chmod(domains):
         command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"],
         detach=True,
         remove=True,
-    ).attach(stdout=True, stderr=True, stream=True, logs=True)
+    )
 
 
-def stream(logs):
+def stream(container):
+    while (container.status != "running"):pass
+    logs = container.attach(stdout=True, stderr=True, stream=True, logs=True)
     for log in logs:
         print(log.decode())
+        if (container.status != "running"):
+            return
 
 
 """
