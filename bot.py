@@ -6,7 +6,7 @@ import shutil
 containers = docker.from_env().containers
 
 def certbot(domains):
-    container = containers.run(
+    return containers.run(
         image="certbot/certbot",
         volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
         ports={"80": 80},
@@ -24,8 +24,7 @@ def certbot(domains):
         ],
         detach=True,
         remove=True
-    )
-    return container.attach(stdout=True,stderr=True,stream=True,logs=True)
+    ).attach(stdout=True,stderr=True,stream=True,logs=True)
 
 def chmod(domains):
     domain = domains[0]
@@ -35,7 +34,7 @@ def chmod(domains):
         command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"],
         detach=True,
         remove=True
-    )
+    ).attach(stdout=True,stderr=True,stream=True,logs=True)
 
 def stream(logs):
     for log in logs:
