@@ -9,7 +9,7 @@ containers = docker.from_env().containers
 def certbot(domains):
     return containers.run(
         image="certbot/certbot",
-        volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
+        volumes={"/app/cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
         ports={"80": 80},
         command=[
             "certonly",
@@ -32,7 +32,7 @@ def chmod(domains):
     domain = domains[0]
     return containers.run(
         image="alpine",
-        volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
+        volumes={"/app/cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
         command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"],
         detach=True,
         remove=True,
@@ -86,7 +86,7 @@ with open("/oneserver/settings.json", "w") as f:
 stream(certbot(domains=domains))
 stream(chmod(domains=domains))
 
-shutil.copy2(f"./cert/{domains[0]}/fullchain.pem", "/oneserver/cert/fullchain.pem")
-shutil.copy2(f"./cert/{domains[0]}/privkey.pem", "/oneserver/cert/privkey.pem")
+shutil.copy2(f"/app/cert/{domains[0]}/fullchain.pem", "/oneserver/cert/fullchain.pem")
+shutil.copy2(f"/app/cert/{domains[0]}/privkey.pem", "/oneserver/cert/privkey.pem")
 
 os.system("cd /oneserver && docker compose up -d --build")
