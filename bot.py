@@ -40,12 +40,9 @@ def chmod(domains):
 
 
 def stream(container):
-    while (container.status != "running"):pass
-    logs = container.attach(stdout=True, stderr=True, stream=True, logs=True)
+    logs = container.logs(stdout=True, stderr=True, stream=True)
     for log in logs:
         print(log.decode())
-        if (container.status != "running"):
-            return
 
 
 """
