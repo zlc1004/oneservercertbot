@@ -22,7 +22,8 @@ def certbot(domains):
             "./config",
             "--standalone",
         ],
-        detach=True
+        detach=True,
+        remove=True
     )
     return container.attach(stdout=True,stderr=True,stream=True,logs=True)
 
@@ -31,8 +32,14 @@ def chmod(domains):
     return containers.run(
         image="alpine",
         volumes={"./cert": {"bind": "/opt/certbot/config/archive", "mode": "rw"}},
-        command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"]
-    ).decode()
+        command=["chmod", "777", f"/opt/certbot/config/archive/{domain}/*"],
+        detach=True,
+        remove=True
+    )
+
+def stream(logs):
+    for log in logs:
+        print(log.decode())
 
 """
 [
@@ -67,10 +74,8 @@ for setting in settings:
 with open("/oneserver/settings.json", 'w') as f:
     json.dump(settings, f)
 
-logs = certbot(domains=domains)
-for log in logs:
-    print(log)
-print(chmod(domains=domains))
+stream(certbot(domains=domains))
+stream(chmod(domains=domains))
 
 shutil.copy2(f"./cert/{domains[0]}/fullchain.pem", "/oneserver/cert/fullchain.pem")
 shutil.copy2(f"./cert/{domains[0]}/privkey.pem", "/oneserver/cert/privkey.pem")
